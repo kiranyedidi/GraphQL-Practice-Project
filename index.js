@@ -11,7 +11,7 @@ const typeDefs = `
 
   type Query {
     totalPhotos: Int!
-    allPhotos: [Photo!]!
+    allPhotos(first: Int=1 start: Int=1): [Photo!]!
   }
 
   type Mutation {
@@ -24,7 +24,18 @@ const photos = [];
 const resolvers = {
   Query: {
     totalPhotos: () => photos.length,
-    allPhotos: () => photos
+    allPhotos: (parent, args) => {
+      const { first, start } = args;
+      var photosToReturn = [];
+      if (!(first || start)) {
+        photosToReturn = photos;
+      } else if (first && start && start + first <= photos.length + 1) {
+        for (i = start - 1; i < start - 1 + first; i++) {
+          photosToReturn.push(photos[i]);
+        }
+      }
+      return photosToReturn;
+    }
   },
   Mutation: {
     postPhoto: (parent, args) => {
