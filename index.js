@@ -1,7 +1,8 @@
 const { ApolloServer } = require('apollo-server');
+const { GraphQLScalarType } = require('graphql');
 
 const typeDefs = `
-
+  scalar DateTime
   enum PhotoCategory {
     SELFIE
     PORTRAIT
@@ -22,11 +23,13 @@ const typeDefs = `
     name: String!
     description: String
     category: PhotoCategory!
+    created: DateTime!
   }
 
   type Query {
     totalPhotos: Int!
     allPhotos(first: Int=1 start: Int=1): [Photo!]!
+    photosAfter(after: DateTime!): [Photo!]!
   }
 
   type Mutation {
@@ -50,12 +53,17 @@ const resolvers = {
         }
       }
       return photosToReturn;
+    },
+    photosAfter: (parent, args) => {
+      // console.log(args);
+      return photos.filter(photo => photo.created > inputDate);
     }
   },
   Mutation: {
     postPhoto: (parent, args) => {
       var newPhoto = {
         id: photos.length + 1,
+        created: new Date(),
         ...args.input
       }
       photos.push(newPhoto);
@@ -65,7 +73,20 @@ const resolvers = {
   Photo: {
     url: (parent) => `http://www.google.com/img/${parent.id}.jpg`,
     id: (parent) => `Kiran - ${parent.id}`
-  }
+  },
+  DateTime: new GraphQLScalarType({
+    name: 'DateTime',
+    description: 'a valid date time value',
+    // serialize: gets invoked when serializing the result to send it back to a client.
+
+    // parseValue: gets invoked to parse client input that was passed through variables.
+
+    // parseLiteral: gets invoked to parse client input that was passed inline in the query.
+
+    serialize: value => new Date(value).toISOString(),
+    parseValue: value => new Date(value),
+    parseLiteral: ast => new Date(ast.value),
+  })
 };
 
 const server = new ApolloServer({
