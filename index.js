@@ -24,10 +24,16 @@ const typeDefs = `
     category: PhotoCategory!
   }
 
-  type Query {
-    totalPhotos: Int!
-    allPhotos(first: Int=1 start: Int=1): [Photo!]!
-  }
+  const db = client.db();
+  const server = new ApolloServer({
+    typeDefs,
+    resolvers,
+    context: async ({ req }) => {
+      const githubToken = req.headers.authorization;
+      const currentUser = db.collection('users').findOne({ githubToken });
+      return { db, currentUser };
+    }
+  });
 
   type Mutation {
     postPhoto(input: PostPhotoInput!): Photo!
