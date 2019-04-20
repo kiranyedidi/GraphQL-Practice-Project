@@ -1,28 +1,19 @@
-const { ApolloServer } = require('apollo-server');
+const { ApolloServer } = require('apollo-server-express');
+const express = require('express');
+const expressPlayground = require('graphql-playground-middleware-express').default
 
-const typeDefs = `
+const { readFileSync } = require('fs');
 
-  enum PhotoCategory {
-    SELFIE
-    PORTRAIT
-    ACTION
-    LANDSCAPE
-    GRAPHIC
-  }
+const typeDefs = readFileSync('./typedefs.graphql', 'UTF-8');
+const resolvers = require('./resolvers');
 
-  input PostPhotoInput {
-    name: String!
-    description: String
-    category: PhotoCategory=PORTRAIT
-  }
+const { MongoClient } = require('mongodb');
+require('dotenv').config();
 
-  type Photo {
-    id: ID!
-    url: String!
-    name: String!
-    description: String
-    category: PhotoCategory!
-  }
+async function start() {
+  const app = express();
+  const MONGO_DB = process.env.DB_HOST;
+  const client = await MongoClient.connect(MONGO_DB, { useNewUrlParser: true });
 
   const db = client.db();
   const server = new ApolloServer({
@@ -35,48 +26,12 @@ const typeDefs = `
     }
   });
 
-  type Mutation {
-    postPhoto(input: PostPhotoInput!): Photo!
-  }
-`;
+  server.applyMiddleware({ app });
 
-const photos = [];
+  app.get('/', (req, res) => res.end('welcome to my GraphQL learning platform'));
+  app.get('/playground', expressPlayground({ endpoint: '/graphql' }));;
 
-const resolvers = {
-  Query: {
-    totalPhotos: () => photos.length,
-    allPhotos: (parent, args) => {
-      const { first, start } = args;
-      var photosToReturn = [];
-      if (!(first || start)) {
-        photosToReturn = photos;
-      } else if (first && start && start + first <= photos.length + 1) {
-        for (i = start - 1; i < start - 1 + first; i++) {
-          photosToReturn.push(photos[i]);
-        }
-      }
-      return photosToReturn;
-    }
-  },
-  Mutation: {
-    postPhoto: (parent, args) => {
-      var newPhoto = {
-        id: photos.length + 1,
-        ...args.input
-      }
-      photos.push(newPhoto);
-      return newPhoto;
-    }
-  },
-  Photo: {
-    url: (parent) => `http://www.google.com/img/${parent.id}.jpg`,
-    id: (parent) => `Kiran - ${parent.id}`
-  }
-};
+  app.listen({ port: 4000 }, () => console.log(`Listening on http://localhost:4000${server.graphqlPath}`));
+}
 
-const server = new ApolloServer({
-  typeDefs,
-  resolvers
-});
-
-server.listen().then(({ url }) => console.log(`GraphQL service running on ${url}`));
+start();
