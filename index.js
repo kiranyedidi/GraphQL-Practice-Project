@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 const { ApolloServer } = require('apollo-server');
 
 const typeDefs = `
@@ -9,13 +10,18 @@ const typeDefs = `
     LANDSCAPE
     GRAPHIC
   }
+=======
+const { ApolloServer } = require('apollo-server-express');
+const express = require('express');
+const expressPlayground = require('graphql-playground-middleware-express').default
 
-  input PostPhotoInput {
-    name: String!
-    description: String
-    category: PhotoCategory=PORTRAIT
-  }
+const { readFileSync } = require('fs');
+>>>>>>> Stashed changes
 
+const typeDefs = readFileSync('./typedefs.graphql', 'UTF-8');
+const resolvers = require('./resolvers');
+
+<<<<<<< Updated upstream
   type Photo {
     id: ID!
     url: String!
@@ -28,14 +34,23 @@ const typeDefs = `
     totalPhotos: Int!
     allPhotos(first: Int=1 start: Int=1): [Photo!]!
   }
+=======
+const { MongoClient } = require('mongodb');
+require('dotenv').config();
 
-  type Mutation {
-    postPhoto(input: PostPhotoInput!): Photo!
-  }
-`;
+async function start() {
+  const app = express();
+  const MONGO_DB = process.env.DB_HOST;
+  const client = await MongoClient.connect(MONGO_DB, { useNewUrlParser: true });
+>>>>>>> Stashed changes
 
-const photos = [];
+  const db = client.db();
+  const context = { db };
+  const server = new ApolloServer({ typeDefs, resolvers, context });
 
+  server.applyMiddleware({ app });
+
+<<<<<<< Updated upstream
 const resolvers = {
   Query: {
     totalPhotos: () => photos.length,
@@ -74,3 +89,12 @@ const server = new ApolloServer({
 });
 
 server.listen().then(({ url }) => console.log(`GraphQL service running on ${url}`));
+=======
+  app.get('/', (req, res) => res.end('welcome to my GraphQL learning platform'));
+  app.get('/playground', expressPlayground({ endpoint: '/graphql' }));;
+
+  app.listen({ port: 4000 }, () => console.log(`Listening on http://localhost:4000${server.graphqlPath}`));
+}
+
+start();
+>>>>>>> Stashed changes
